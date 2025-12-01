@@ -20,9 +20,9 @@ pub async fn health_check() -> Result<Json<serde_json::Value>, StatusCode> {
 }
 
 pub async fn test_connection() -> Result<Json<serde_json::Value>, StatusCode> {
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
     match sqlx::query("SELECT 1 as test")
-        .fetch_one(&pool)
+        .fetch_one(pool)
         .await {
         Ok(_) => Ok(Json(serde_json::json!({
             "status": "Database connected successfully"
@@ -36,7 +36,7 @@ pub async fn test_connection() -> Result<Json<serde_json::Value>, StatusCode> {
 
 pub async fn get_all_customers() -> Result<Json<Vec<CreateCustomer>>, StatusCode> {
     println!("🔥 get_all_customers function called");
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
     
     let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
     let raw_sql = format!("SELECT customer_id, email, first_name, last_name, dob, sex::text, marital_status::text, phone, 
@@ -92,7 +92,7 @@ pub async fn create_visa_details(
     Json(payload): Json<CreateCompleteCustomerRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     println!("🔥 create_visa_details function called");
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
     let h1b_status = payload.h1b_status.as_deref().unwrap_or("Active");
     
     let _query_sql = "INSERT INTO visa_db.h1bcustomer (
@@ -148,7 +148,7 @@ pub async fn soft_delete_customer(
     Path(email): Path<String>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     println!("🔥 soft_delete_customer function called for email: {}", email);
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
 
     // Use the pool directly, SQLx will manage connections automatically
     match sqlx::query("UPDATE visa_db.h1bcustomer SET h1b_status = 'Inactive' WHERE email = $1")
@@ -183,7 +183,7 @@ pub async fn soft_delete_customer(
 pub async fn get_customer_personal(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
     
     let query_sql = "SELECT customer_id, email, first_name, last_name, dob, sex::text, marital_status::text, phone 
         FROM visa_db.h1bcustomer WHERE customer_id = $1";
@@ -220,7 +220,7 @@ pub async fn get_customer_personal(
 pub async fn get_customer_address(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
     
     let query_sql = "SELECT customer_id, street_name, city, state, zip 
         FROM visa_db.h1bcustomer WHERE customer_id = $1";
@@ -753,7 +753,7 @@ pub async fn update_customer_by_id(
 }
 pub async fn get_all_customers_with_status() -> Result<Json<Vec<serde_json::Value>>, StatusCode> {
     println!("🔥 get_all_customers_with_status function called");
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
     
     let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
     let raw_sql = format!("SELECT customer_id, email, first_name, last_name, dob, sex::text, marital_status::text, phone, 
