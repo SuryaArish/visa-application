@@ -11,16 +11,29 @@ pub async fn initialize_database() -> Result<(), Box<dyn std::error::Error>> {
     let db_name = std::env::var("DB_NAME")?;
     
     let database_url = format!("postgresql://{}:{}@{}:{}/{}", db_user, db_password, db_host, db_port, db_name);
-                                        
     
-    let pool = PgPoolOptions::new()
-        .max_connections(10)
-        .connect(&database_url)
-        .await?;
+    let mut attempts = 0;
+    let max_attempts = 5;
     
-    DB_POOL.set(pool).map_err(|_| "Failed to set database pool")?;
-    
-    Ok(())
+    loop {
+        match PgPoolOptions::new()
+            .max_connections(10)
+            .connect(&database_url)
+            .await {
+            Ok(pool) => {
+                DB_POOL.set(pool).map_err(|_| "Failed to set database pool")?;
+                return Ok(());
+            }
+            Err(e) => {
+                attempts += 1;
+                if attempts >= max_attempts {
+                    return Err(e.into());
+                }
+                println!("Database connection attempt {} failed, retrying in 2 seconds...", attempts);
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            }
+        }
+    }
 }
 
 pub fn get_db_pool() -> PgPool {
