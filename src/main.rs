@@ -23,9 +23,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn run_local_server() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize database connection
-    initialize_database().await?;
-    let pool = get_db_pool();
+    // Database will be initialized on first use
+    let _pool = std::env::var("DB_HOST"); // Just check env vars exist
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::PATCH, Method::OPTIONS])

@@ -37,5 +37,21 @@ pub async fn initialize_database() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn get_db_pool() -> PgPool {
-    DB_POOL.get().expect("Database not initialized").clone()
+    DB_POOL.get_or_init(|| {
+        tokio::runtime::Handle::current().block_on(async {
+            let db_host = std::env::var("DB_HOST").expect("DB_HOST not set");
+            let db_port = std::env::var("DB_PORT").expect("DB_PORT not set");
+            let db_user = std::env::var("DB_USER").expect("DB_USER not set");
+            let db_password = std::env::var("DB_PASSWORD").expect("DB_PASSWORD not set");
+            let db_name = std::env::var("DB_NAME").expect("DB_NAME not set");
+            
+            let database_url = format!("postgresql://{}:{}@{}:{}/{}", db_user, db_password, db_host, db_port, db_name);
+            
+            PgPoolOptions::new()
+                .max_connections(10)
+                .connect(&database_url)
+                .await
+                .expect("Failed to connect to database")
+        })
+    }).clone()
 }
