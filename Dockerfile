@@ -1,16 +1,21 @@
 # Build stage
-FROM rustlang/rust:nightly as builder
+FROM rust:1.75 as builder
 
 WORKDIR /app
 
-# Copy manifests
-COPY Cargo.toml ./
+# Copy manifests first for better caching
+COPY Cargo.toml Cargo.lock ./
 
-# Copy source code
+# Create dummy src to cache dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release
+RUN rm -rf src
+
+# Copy real source code
 COPY src ./src
 
 # Build the application
-RUN cargo build --release
+RUN touch src/main.rs && cargo build --release
 
 # Runtime stage
 FROM debian:bookworm-slim

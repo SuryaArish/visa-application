@@ -54,8 +54,10 @@ async fn run_local_server() -> Result<(), Box<dyn std::error::Error>> {
         .merge(protected_routes)
         .layer(cors);
 
-    println!("Starting local server on http://localhost:3000");
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let bind_addr = format!("0.0.0.0:{}", port);
+    println!("Starting server on {}", bind_addr);
+    let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     axum::serve(listener, app).await?;
     Ok(())
 }

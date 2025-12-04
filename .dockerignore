@@ -4,4 +4,6 @@ target/
 README.md
 Dockerfile
 .dockerignore
+*.md
 .env
+node_modules/
