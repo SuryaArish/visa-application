@@ -9,12 +9,9 @@ mod models;
 mod handlers;
 mod middleware;
 mod config;
-mod auth;
-
-
 
 use handlers::*;
-use auth::auth_middleware;
+use middleware::auth::auth_middleware;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,12 +31,7 @@ async fn run_local_server() -> Result<(), Box<dyn std::error::Error>> {
             axum::http::header::AUTHORIZATION,
             axum::http::header::CONTENT_TYPE,
         ]);
-    let app = Router::new()
-        // Health and Info Routes
-        .route("/health", get(health_check))
-        .route("/hello", get(test_connection))
-        
-        // New API structure as per README
+    let protected_routes = Router::new()
         .route("/h1b_customer/create", post(create_visa_details))
         .route("/customers", get(get_all_customers_with_status))
         .route("/get_customer_by_id/:id", get(get_customer_by_id))
@@ -49,14 +41,13 @@ async fn run_local_server() -> Result<(), Box<dyn std::error::Error>> {
         .route("/h1b_customer/by_login_email/:login_email", get(get_customer_by_login_email))
         .route("/h1b_customer/all", get(get_all_customers_no_filter))
         .route("/h1b_customer/activate/:customer_id", patch(activate_customer_by_id))
-        .layer(cors);
-        
-    // Protected routes with auth
-    let protected_app = Router::new()
-        .route("/protected/customers", get(get_all_customers_with_status))
         .layer(axum::middleware::from_fn(auth_middleware));
-        
-    let app = app.merge(protected_app);
+
+    let app = Router::new()
+        .route("/health", get(health_check))
+        .route("/hello", get(test_connection))
+        .merge(protected_routes)
+        .layer(cors);
 
     println!("Starting local server on http://localhost:3000");
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
